@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+</head>
+<body style="margin:0; font-family:'Segoe UI',sans-serif; background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460); min-height:100vh; color:white;">
+
+  <div style="background:rgba(255,255,255,0.05); padding:18px 40px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1);">
+    <h2 style="margin:0; color:#e94560;">🛡️ Admin Panel</h2>
+    <button onclick="logout()"
+      style="background:rgba(233,69,96,0.2); color:#e94560; border:1px solid #e94560; padding:8px 20px; border-radius:8px; cursor:pointer;">
+      Logout
+    </button>
+  </div>
+
+  <div style="max-width:700px; margin:40px auto; padding:0 20px;">
+    <h2 style="text-align:center; color:#a8b2d8; letter-spacing:2px; margin-bottom:30px;">📊 VOTE RESULTS</h2>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (!token || role !== 'admin') window.location.href = '/login.html';
+
+    const colors = ['#e94560', '#4cc9f0', '#f8961e'];
+
+    async function loadResults() {
+      const res = await fetch('/api/results', {
+        headers: { 'authorization': token }
+      });
+      const votes = await res.json();
+      const total = votes.reduce((a, v) => a + v.count, 0);
+      const container = document.getElementById('results');
+
+      container.innerHTML = votes.map((v, i) => {
+        const percent = total ? Math.round((v.count / total) * 100) : 0;
+        return `
+          <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:24px 28px; margin-bottom:18px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
+              <span style="font-size:1.2rem; font-weight:bold;">${v.candidate}</span>
+              <span style="background:rgba(255,255,255,0.1); padding:6px 16px; border-radius:20px; color:${colors[i % colors.length]};">
+                ${v.count} votes — ${percent}%
+              </span>
+            </div>
+            <div style="background:rgba(255,255,255,0.08); border-radius:10px; height:16px; overflow:hidden;">
+              <div style="width:${percent}%; background:linear-gradient(90deg,${colors[i % colors.length]},${colors[(i+1) % colors.length]}); height:100%; border-radius:10px;"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      container.innerHTML += `
+        <div style="background:rgba(233,69,96,0.15); border:1px solid rgba(233,69,96,0.4); border-radius:14px; padding:20px; text-align:center; margin-top:10px;">
+          <span style="font-size:1.1rem; color:#e94560; font-weight:bold;">Total Votes Cast: ${total}</span>
+        </div>`;
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      window.location.href = '/login.html';
+    }
+
+    loadResults();
+  </script>
+</body>
+</html>
